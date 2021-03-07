@@ -68,7 +68,7 @@ The motivations are inspired by  [Trained ternary quantization](https://arxiv.or
 - [x] We can supply another version of code with local area network (LAN) communications based on **flask and PyTorch**, please contact us if necessary.
 
 - [x] Distributed under the MIT license. See ``LICENSE`` for more information.
-- [ ] The work has certain disadvantages due to the level of me, if you have any suggestions or comments, thank you very much for letting me know.
+- [ ] This work has certain disadvantages due to my limited ability, if you have any suggestions or comments, thank you very much for letting me know.
 
 ## Citation
 
