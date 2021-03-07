@@ -3,7 +3,6 @@
 
 This is the source code for the paper "Xu J, Du W, Jin Y, et al. Ternary compression for communication-efficient federated learning[J]. IEEE Transactions on Neural Networks and Learning Systems, 2020.",  [Link](https://ieeexplore.ieee.org/abstract/document/9288933)
 
-[TOC]
 
 ## Requirements
 
