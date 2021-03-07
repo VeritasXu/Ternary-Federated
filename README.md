@@ -29,7 +29,10 @@ python Ternary_Fed.py
 
 We use the moderate CNN in the paper to examine the performance of the proposed method a second time, please note that the "up+down" means that the Strategy II in the Algorithm 2 of the paper is not used in this experiment, and we have not save the best model during the training, hence, the oscillation will be more obvious.
 
-<img src="D:\Github\Ternary-Federated\Results\moderate_cnn.png" style="zoom: 33%;" />
+
+<p align="center">
+  <img src="https://github.com/VeritasXu/Ternary-Federated/blob/master/Results/moderate_cnn.png" alt="demo1" style="zoom:33%;"/>
+</p>
 
 
 
