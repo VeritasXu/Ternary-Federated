@@ -30,7 +30,7 @@ def choose_model(f_dict, ter_dict):
     print('F: %.3f' % acc_1, 'TF: %.3f' % acc_2)
 
     flag = False
-    if np.abs(acc_1-acc_2) < 0.01:
+    if np.abs(acc_1-acc_2) < 0.03:
         flag = True
         return ter_dict, flag
     else:

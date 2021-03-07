@@ -1,22 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Python version: 3.6
-
 import copy
 import torch
 import numpy as np
+from utils.config import Args
 from tools.FTTQ import fed_ttq
 
 
-def quantize_mlp(model_dict):
+def quantize_server(model_dict):
     """
     Return quantized weights of all model.
     Only possible values of quantized weights are: {0, 1, -1}.
     """
 
     for key, kernel in model_dict.items():
-        # quantize the ternary layer in global model
-        if 'ternary' in key:
+        # quantize the ternary layer in the global model
+        if Args.model is 'MLP' and 'ternary' in key:
+            print(key)
+            delta = 0.05 * kernel.abs().max()
+            a = (kernel > delta).float()
+            b = (kernel < -delta).float()
+            w_p = kernel * a.sum() / a.sum()
+            w_n = kernel * b.sum() / b.sum()
+            kernel = w_p * a + w_n * b
+            model_dict[key] = kernel
+        elif Args.model is not 'MLP' and 'ternary' and 'conv' in key:
             print(key)
             delta = 0.05 * kernel.abs().max()
             a = (kernel > delta).float()
@@ -28,31 +37,6 @@ def quantize_mlp(model_dict):
 
     return model_dict
 
-def quantize_cnn(model_dict):
-    """
-    Return quantized weights of all model.
-    Only possible values of quantized weights are: {0, 1, -1}.
-    """
-
-    for key, kernel in model_dict.items():
-        # quantize the ternary layer in global model
-        if 'ternary' and 'conv' in key:
-            print(key)
-            T_a = 0.07
-            d2 = kernel.size(0) * kernel.size(1)
-            delta = T_a * kernel.abs().sum() / d2
-
-            tmp1 = (kernel.abs() > delta).sum()
-            tmp2 = ((kernel.abs() > delta) * kernel.abs()).sum()
-            w_p = tmp2 / tmp1
-
-            a = (kernel > delta).float()
-            b = (kernel < -delta).float()
-
-            kernel = w_p * a - w_p * b
-            model_dict[key] = kernel
-
-    return model_dict
 
 
 def ServerUpdate(w, num_samp):
@@ -75,7 +59,7 @@ def ServerUpdate(w, num_samp):
 
     backup_w = copy.deepcopy(w_avg)
 
-    ter_avg = quantize_cnn(backup_w)
+    ter_avg = quantize_server(backup_w)
 
     return w_avg, ter_avg
 
