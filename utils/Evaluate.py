@@ -19,6 +19,7 @@ def accuracy(true, pred, top_k=(1,)):
 
 
 def evaluate(model, loss, val_iterator, args):
+    model.eval()
     model = model.to(args.device)
     loss_value = 0.0
     acc = 0.0

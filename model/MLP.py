@@ -5,8 +5,6 @@ import torch.nn.functional as F
 from utils.config import Args
 
 
-
-
 class MLP(nn.Module):
     """
     define MLP model
@@ -35,17 +33,19 @@ class MLP(nn.Module):
 
 
 
-def Ternary_MLP(pre_model, args):
+def Quantized_MLP(pre_model, args):
     """
     quantize the MLP model
     :param pre_model:
     :param args:
     :return:
     """
-    
+
+    #full-precision first and last layer
     weights = [p for n, p in pre_model.named_parameters() if 'fp_layer' in n and 'weight' in n]
     biases = [pre_model.fp_layer2.bias]
 
+    #layers that need to be quantized
     ternary_weights = [p for n, p in pre_model.named_parameters() if 'ternary' in n]
 
     params = [

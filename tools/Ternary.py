@@ -7,11 +7,7 @@ from utils.Evaluate import evaluate
 
 
 
-def initial_scales():
-    """
-    :return: initialized quantization factor w_p
-    """
-    return 1.0
+
 
 def quantize(kernel, w_p, args):
     """
@@ -26,9 +22,14 @@ def quantize(kernel, w_p, args):
     if args.ada_thresh is False:
         delta = T_k * kernel.abs().max()
     else:
-        T_a = 0.7
+        T_a = 0.07
         d2 = kernel.size(0) * kernel.size(1)
         delta = T_a * kernel.abs().sum() / d2
+
+        tmp1 = (kernel.abs() > delta).sum()
+        tmp2 = ((kernel.abs() > delta)*kernel.abs()).sum()
+        w_p = tmp2 / tmp1
+
 
     a = (kernel > delta).float()
     b = (kernel < -delta).float()
@@ -50,11 +51,8 @@ def get_grads(kernel_grad, kernel, w_p, args):
     """
     T_k = args.T_thresh
 
-    if args.ada_thresh is False:
-        delta = T_k * kernel.abs().max()
-    else:
+    delta = T_k * kernel.abs().max()
 
-        delta = T_k * kernel.abs().sum().mean()
     # masks
     a = (kernel > delta).float().to(args.device)
     b = (kernel < -delta).float().to(args.device)
@@ -71,6 +69,8 @@ def optimization_step(model, loss, x_batch, y_batch, current_round, optimizer_li
     total_epoch = current_round*args.local_e
 
     optimizer, optimizer_fp, optimizer_sf = optimizer_list
+
+
 
     x_batch = x_batch.to(args.device)
     y_batch = y_batch.to(args.device)
@@ -90,15 +90,18 @@ def optimization_step(model, loss, x_batch, y_batch, current_round, optimizer_li
     all_fp_kernels = optimizer_fp.param_groups[0]['params']
     scaling_factors = optimizer_sf.param_groups[0]['params']
 
+    wp_lists = [0 for i in range(len(all_kernels))]
+
     for i in range(len(all_kernels)):
         k = all_kernels[i]
         k_fp = all_fp_kernels[i]
         f = scaling_factors[i]
-        w_p = f.detach().item()
+        w_p = f.data
         k_fp_grad, w_p_grad = get_grads(k.grad.data, k_fp.data, w_p, args)
         k_fp.grad = k_fp_grad
         k.grad.data.zero_()
         f.grad = w_p_grad.to(args.device)
+
 
 
     optimizer.step()
@@ -112,11 +115,13 @@ def optimization_step(model, loss, x_batch, y_batch, current_round, optimizer_li
         k = all_kernels[i]
         k_fp = all_fp_kernels[i]
         f = scaling_factors[i]
-        w_p = f.detach().item()
+        w_p = f.data
         # re-quantize a quantized kernel using updated full precision weights
         k.data = quantize(k_fp.data, w_p, args)
 
-    return batch_loss
+        wp_lists[i] = f.clone()
+
+    return wp_lists
 
 
 def ternary_train(model, loss, optimization_step_fn, train_iterator, val_iterator, client_name, args):
@@ -131,16 +136,17 @@ def ternary_train(model, loss, optimization_step_fn, train_iterator, val_iterato
     model.train()
 
     acc = []
+    wp_lists = []
+    record_list = np.zeros((100, 5))
     for epoch in range(0, args.local_e):
 
         # main training loop
         for ind, (x_batch, y_batch) in enumerate(train_iterator):
-            batch_loss = optimization_step_fn(model, loss, x_batch, y_batch, args)
+            wp_lists = optimization_step_fn(model, loss, x_batch, y_batch, args)
+
 
     end_time = time.time()
-
     test_loss, test_acc, test_top5_acc = evaluate(model, loss, val_iterator, args)
-
 
     all_losses += [(
         client_name,
@@ -156,6 +162,4 @@ def ternary_train(model, loss, optimization_step_fn, train_iterator, val_iterato
               'test top5:{3:.3f}, elapsed time:{4:.3f}'
     print(out_str.format(*all_losses[-1], end_time - start_time))
 
-
-
-    return model.state_dict(), test_loss
+    return model.state_dict(), wp_lists

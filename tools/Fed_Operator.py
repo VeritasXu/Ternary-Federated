@@ -3,12 +3,9 @@
 # Python version: 3.6
 
 import copy
-import time
 import torch
 import numpy as np
 from tools.FTTQ import fed_ttq
-from utils.Evaluate import evaluate
-from torch.utils.data import DataLoader
 
 
 def quantize_mlp(model_dict):
@@ -27,6 +24,32 @@ def quantize_mlp(model_dict):
             w_p = kernel * a.sum() / a.sum()
             w_n = kernel * b.sum() / b.sum()
             kernel = w_p * a + w_n * b
+            model_dict[key] = kernel
+
+    return model_dict
+
+def quantize_cnn(model_dict):
+    """
+    Return quantized weights of all model.
+    Only possible values of quantized weights are: {0, 1, -1}.
+    """
+
+    for key, kernel in model_dict.items():
+        # quantize the ternary layer in global model
+        if 'ternary' and 'conv' in key:
+            print(key)
+            T_a = 0.07
+            d2 = kernel.size(0) * kernel.size(1)
+            delta = T_a * kernel.abs().sum() / d2
+
+            tmp1 = (kernel.abs() > delta).sum()
+            tmp2 = ((kernel.abs() > delta) * kernel.abs()).sum()
+            w_p = tmp2 / tmp1
+
+            a = (kernel > delta).float()
+            b = (kernel < -delta).float()
+
+            kernel = w_p * a - w_p * b
             model_dict[key] = kernel
 
     return model_dict
@@ -51,24 +74,24 @@ def ServerUpdate(w, num_samp):
                 w_avg[key] += frac_c[i] * w[i][key]
 
     backup_w = copy.deepcopy(w_avg)
-    ter_avg = quantize_mlp(backup_w)
+
+    ter_avg = quantize_cnn(backup_w)
 
     return w_avg, ter_avg
 
 
 class LocalUpdate(object):
-    def __init__(self, client_name, c_round, train_set, test_set, args):
+    def __init__(self, client_name, c_round, train_iter, test_iter, wp_lists, args):
         self.c_name = client_name
         self.c_round = c_round
+        self.wp_lists = wp_lists
         self.args = args
-        self.local_train = train_set
-        self.local_test = test_set
+        self.local_train = train_iter
+        self.local_test = test_iter
         self.loss_func = torch.nn.CrossEntropyLoss()
 
     def TFed_train(self, net):
-        net.train()
         # train and update
-        net_dict, local_loss = fed_ttq(net, self.local_train, self.local_test, self.c_name, self.c_round, self.args)
+        net_dict, wp_lists = fed_ttq(net, self.local_train, self.local_test, self.c_name, self.c_round, self.wp_lists, self.args)
 
-        return net_dict, local_loss
-        
+        return net_dict, wp_lists
