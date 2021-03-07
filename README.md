@@ -31,7 +31,7 @@ We use the moderate CNN in the paper to examine the performance of the proposed 
 
 
 <p align="center">
-  <img src="https://github.com/VeritasXu/Ternary-Federated/blob/master/Results/moderate_cnn.png" alt="demo1" style="zoom:33%;"/>
+  <img src="https://github.com/VeritasXu/Ternary-Federated/blob/master/Results/moderate_cnn.png" alt="demo1" style="zoom:20%;"/>
 </p>
 
 
