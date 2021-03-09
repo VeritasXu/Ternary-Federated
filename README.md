@@ -26,7 +26,7 @@ python Ternary_Fed.py
 
 ## Results
 
-We use the moderate CNN in the paper to examine the performance of the proposed method a second time, please note that the "up+down" means that the Strategy II in the Algorithm 2 of the paper is not used in this experiment, and we have not save the best model during the training, hence, the oscillation will be more obvious.
+We use the moderate CNN in the paper to examine the performance of the proposed method a second time, please note that the "up+down" means that the Strategy II in the Algorithm 2 of the paper is not used in this experiment, and we have not save the best model during the training, hence, the oscillation will be more obvious. In practice, you can choose not to save the best model in previous rounds for a steady curve.
 
 
 <p align="center">
