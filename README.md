@@ -9,6 +9,7 @@ This is the source code for the paper "Xu J, Du W, Jin Y, et al. Ternary compres
 ```
 #requirements
 Pytorch 1.0.0 or higher
+torchvision 0.6.0 or higher
 ```
 
 
